@@ -4,8 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CreadorRecibos</title>
-  <link rel="manifest" href="/manifest.json">
-  <link rel="icon" href="/favicon.ico">
+  <!-- CAMBIOS AQUÍ para rutas relativas -->
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" href="./favicon.ico">
+  <!-- Opcional: Si quieres un icono específico para Apple touch, y lo tienes en tu carpeta icons -->
+  <!-- <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png"> -->
   <style>
     body, html {
       margin: 0;
@@ -45,6 +48,8 @@
       border-radius: 50%;
       background: white;
       padding: 3px;
+      /* Para que el icono dentro se vea bien si tiene transparencia */
+      object-fit: contain; 
     }
     .banner-text {
       flex: 1;
@@ -99,7 +104,9 @@
   <!-- Banner de instalación mejorado -->
   <div id="install-banner" class="hidden">
     <div class="banner-content">
-      <img src="/icons/icon-192.png" alt="Logo CreadorRecibos" class="banner-logo">
+      <!-- CAMBIO AQUÍ para ruta relativa del logo del banner -->
+      <!-- Asumiendo que quieres usar android-launchericon-192-192.png para el banner -->
+      <img src="./icons/android-launchericon-192-192.png" alt="Logo CreadorRecibos" class="banner-logo">
       <div class="banner-text">
         <div class="banner-title">Instalar CreadorRecibos</div>
       </div>
@@ -131,7 +138,8 @@
     // Registro del service worker después de cargar la página
     window.addEventListener('load', function() {
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./service-worker.js')
+        // La ruta './service-worker.js' ya es correcta (relativa)
+        navigator.serviceWorker.register('./service-worker.js', { scope: '.' }) // Especificar el scope explícitamente
           .then(registration => {
             console.log('Service Worker registrado con éxito:', registration);
           })
@@ -144,7 +152,7 @@
     // Verificar si ya está instalada
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
                          window.navigator.standalone || 
-                         document.referrer.includes('android-app://');
+                         (document.referrer && document.referrer.includes('android-app://')); // Añadida comprobación para document.referrer
     
     // Capturar evento de instalación
     window.addEventListener('beforeinstallprompt', (e) => {
@@ -159,9 +167,9 @@
       // Mostrar nuestro banner personalizado INMEDIATAMENTE después de capturar el evento
       if (!isStandalone && localStorage.getItem('installBannerClosed') !== 'true') {
         console.log('Mostrando banner personalizado');
-        setTimeout(() => {
+        setTimeout(() => { // Pequeño timeout para asegurar que el DOM esté listo
           installBanner.classList.remove('hidden');
-        }, 500);
+        }, 500); // Ajusta el tiempo si es necesario
       }
     });
     
@@ -169,7 +177,8 @@
     installBtn.addEventListener('click', async () => {
       if (!deferredPrompt) {
         console.log('No hay evento de instalación disponible');
-        alert('Para instalar: Usa el menú del navegador para añadir esta app a tu pantalla de inicio');
+        // Mejorar el mensaje si el banner manual se muestra sin deferredPrompt
+        alert('Para instalar esta aplicación, busca la opción "Instalar" o "Añadir a pantalla de inicio" en el menú de tu navegador.');
         return;
       }
       
@@ -191,7 +200,7 @@
     // Cerrar el banner manualmente
     closeBanner.addEventListener('click', () => {
       installBanner.classList.add('hidden');
-      localStorage.setItem('installBannerClosed', 'true');
+      localStorage.setItem('installBannerClosed', 'true'); // Guardar preferencia del usuario
     });
     
     // Ocultar banner cuando se instala
@@ -201,18 +210,15 @@
     });
     
     // Si no se detecta el evento beforeinstallprompt pero el usuario no ha instalado la app,
-    // mostrar el banner después de un tiempo
+    // y no ha cerrado el banner, mostrar el banner después de un tiempo
     if (!isStandalone && localStorage.getItem('installBannerClosed') !== 'true') {
       setTimeout(() => {
-        if (!installBanner.classList.contains('hidden')) {
-          return; // El banner ya está visible
-        }
-        
-        if (!deferredPrompt) {
-          console.log('Mostrando banner manual después de timeout');
+        if (installBanner.classList.contains('hidden') && !deferredPrompt) { 
+          // Solo mostrar si está oculto Y no hay un deferredPrompt (el beforeinstallprompt no se disparó)
+          console.log('Mostrando banner manual después de timeout porque beforeinstallprompt no se disparó o ya se usó');
           installBanner.classList.remove('hidden');
         }
-      }, 3000);
+      }, 3000); // Tiempo de espera antes de mostrar el banner manual
     }
   </script>
 </body>
